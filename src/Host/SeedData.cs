@@ -23,6 +23,51 @@ namespace Host
                 var context = scope.ServiceProvider.GetService<ApplicationDbContext>();
                 context.Database.Migrate();
 
+                // Setup roles
+                var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var managerRole = roleMgr.FindByIdAsync("Manager").Result;
+                if (managerRole == null)
+                {
+                    managerRole = new IdentityRole("Manager");
+                    var result = roleMgr.CreateAsync(managerRole).Result;
+                    if (!result.Succeeded)
+                    {
+                        throw new Exception(result.Errors.First().Description);
+                    }
+
+                    var sysAdminClaimResult = roleMgr.AddClaimAsync(managerRole, new Claim("sysadmin", "true")).Result;
+                    if (!sysAdminClaimResult.Succeeded)
+                    {
+                        throw new Exception(sysAdminClaimResult.Errors.First().Description);
+                    }
+
+                    var writeAccessClaimResult = roleMgr.AddClaimAsync(managerRole, new Claim("write_access", "true")).Result;
+                    if (!writeAccessClaimResult.Succeeded)
+                    {
+                        throw new Exception(writeAccessClaimResult.Errors.First().Description);
+                    }
+                    Console.WriteLine("Manager role created");
+                }
+
+                var employeeRole = roleMgr.FindByIdAsync("Employee").Result;
+                if (employeeRole == null)
+                {
+                    employeeRole = new IdentityRole("Employee");
+                    var result = roleMgr.CreateAsync(employeeRole).Result;
+                    if (!result.Succeeded)
+                    {
+                        throw new Exception(result.Errors.First().Description);
+                    }
+
+                    var claimResult = roleMgr.AddClaimAsync(employeeRole, new Claim("read_only", "true")).Result;
+                    if (!claimResult.Succeeded)
+                    {
+                        throw new Exception(claimResult.Errors.First().Description);
+                    }
+
+                    Console.WriteLine("Employee role created");
+                }
+
                 var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                 var alice = userMgr.FindByNameAsync("alice").Result;
                 if (alice == null)
@@ -50,6 +95,13 @@ namespace Host
                     {
                         throw new Exception(result.Errors.First().Description);
                     }
+
+                    var addManagerResult = userMgr.AddToRoleAsync(alice, "Manager").Result;
+                    if (!addManagerResult.Succeeded)
+                    {
+                        throw new Exception(addManagerResult.Errors.First().Description);
+                    }
+
                     Console.WriteLine("alice created");
                 }
                 else
@@ -84,6 +136,13 @@ namespace Host
                     {
                         throw new Exception(result.Errors.First().Description);
                     }
+
+                    var addEmployeeResult = userMgr.AddToRoleAsync(bob, "Employee").Result;
+                    if (!addEmployeeResult.Succeeded)
+                    {
+                        throw new Exception(addEmployeeResult.Errors.First().Description);
+                    }
+
                     Console.WriteLine("bob created");
                 }
                 else
