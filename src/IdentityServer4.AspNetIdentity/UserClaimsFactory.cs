@@ -11,16 +11,19 @@ using IdentityModel;
 
 namespace IdentityServer4.AspNetIdentity
 {
-    internal class UserClaimsFactory<TUser> : IUserClaimsPrincipalFactory<TUser>
+    internal class UserClaimsFactory<TUser, TRole> : IUserClaimsPrincipalFactory<TUser>
         where TUser : class
+        where TRole : class
     {
         private readonly Decorator<IUserClaimsPrincipalFactory<TUser>> _inner;
         private UserManager<TUser> _userManager;
+        private RoleManager<TRole> _roleManager;
 
-        public UserClaimsFactory(Decorator<IUserClaimsPrincipalFactory<TUser>> inner, UserManager<TUser> userManager)
+        public UserClaimsFactory(Decorator<IUserClaimsPrincipalFactory<TUser>> inner, UserManager<TUser> userManager, RoleManager<TRole> roleManager)
         {
             _inner = inner;
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         public async Task<ClaimsPrincipal> CreateAsync(TUser user)
@@ -42,7 +45,7 @@ namespace IdentityServer4.AspNetIdentity
                 identity.AddClaim(new Claim(JwtClaimTypes.PreferredUserName, username));
             }
 
-            if (!identity.HasClaim(x=>x.Type == JwtClaimTypes.Name))
+            if (!identity.HasClaim(x => x.Type == JwtClaimTypes.Name))
             {
                 identity.AddClaim(new Claim(JwtClaimTypes.Name, username));
             }
@@ -72,6 +75,19 @@ namespace IdentityServer4.AspNetIdentity
                         new Claim(JwtClaimTypes.PhoneNumberVerified,
                             await _userManager.IsPhoneNumberConfirmedAsync(user) ? "true" : "false", ClaimValueTypes.Boolean)
                     });
+                }
+            }
+
+            if (_userManager.SupportsUserRole)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+
+                // Multiple roles supported
+                identity.AddClaims(roles.Select(role => new Claim(JwtClaimTypes.Role, role)));
+
+                foreach (var role in roles)
+                {
+                    identity.AddClaims(await _roleManager.GetClaimsAsync(await _roleManager.FindByNameAsync(role)));
                 }
             }
 

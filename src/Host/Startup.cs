@@ -36,7 +36,7 @@ namespace Host
                 .AddInMemoryIdentityResources(Resources.GetIdentityResources())
                 .AddInMemoryApiResources(Resources.GetApiResources())
                 .AddInMemoryClients(Clients.Get())
-                .AddAspNetIdentity<ApplicationUser>();
+                .AddAspNetIdentity<ApplicationUser, IdentityRole>();
 
             services.AddAuthentication()
                 .AddGoogle(options =>

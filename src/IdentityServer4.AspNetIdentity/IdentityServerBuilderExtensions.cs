@@ -23,12 +23,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// and authenticaiton cookie settings).
         /// </summary>
         /// <typeparam name="TUser">The type of the user.</typeparam>
+        /// <typeparam name="TRole">The type of the role.</typeparam>
         /// <param name="builder">The builder.</param>
         /// <returns></returns>
-        public static IIdentityServerBuilder AddAspNetIdentity<TUser>(this IIdentityServerBuilder builder)
+        public static IIdentityServerBuilder AddAspNetIdentity<TUser, TRole>(this IIdentityServerBuilder builder)
             where TUser : class
+            where TRole : class
         {
-            builder.Services.AddTransientDecorator<IUserClaimsPrincipalFactory<TUser>, UserClaimsFactory<TUser>>();
+            builder.Services.AddTransientDecorator<IUserClaimsPrincipalFactory<TUser>, UserClaimsFactory<TUser, TRole>>();
 
             builder.Services.Configure<IdentityOptions>(options =>
             {
